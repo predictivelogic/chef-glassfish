@@ -34,6 +34,9 @@ action :create do
     user new_resource.system_user
     group new_resource.system_group
     code asadmin_command(command.join(' '))
+
+    # Hack: Force domain to treat groups/roles the same.
+    code asadmin_command("set server-config.security-service.activate-default-principal-to-role-mapping=true")
   end
 end
 
