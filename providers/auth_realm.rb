@@ -29,14 +29,18 @@ action :create do
   command << "--property" << encode_parameters(properties)
   command << new_resource.name
 
+  bash "asadmin_enable_default_principal_to_role_mapping" do
+    # Hack: Force domain to treat groups/roles the same.
+    Chef::Log.info "Turning on Default Principal-to-Role-Mapping"
+    code asadmin_command("set server-config.security-service.activate-default-principal-to-role-mapping=true")
+  end
+
   bash "asadmin_create_auth_realm #{new_resource.name}" do
     not_if "#{asadmin_command('list-auth-realms')} #{new_resource.target} | grep -x -- '#{new_resource.name}'"
     user new_resource.system_user
     group new_resource.system_group
+    Chef::Log.info "Creating Realm: " + new_resource.name
     code asadmin_command(command.join(' '))
-
-    # Hack: Force domain to treat groups/roles the same.
-    code asadmin_command("set server-config.security-service.activate-default-principal-to-role-mapping=true")
   end
 end
 
