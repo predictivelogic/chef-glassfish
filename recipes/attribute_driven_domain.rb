@@ -68,14 +68,17 @@ gf_sort(node['glassfish']['domains']).each_pair do |domain_key, definition|
 
   Chef::Log.info "Defining GlassFish Domain #{domain_key}"
 
-  admin_port = definition['config']['admin_port']
+  admin_port = definition['config']['admin_port'].to_i
   username = definition['config']['username']
   secure = definition['config']['secure']
+  if (secure.is_a? String)
+    secure = secure =~ (/^(true|t|yes|y|1)$/i) ? true : false
+  end
   password_file = username ? "#{node['glassfish']['domains_dir']}/#{domain_key}_admin_passwd" : nil
   system_username = definition['config']['system_user']
   system_group = definition['config']['system_group']
 
-  if (definition['config']['port'] && definition['config']['port'] < 1024) || (admin_port && admin_port < 1024)
+  if (definition['config']['port'] && definition['config']['port'].to_i < 1024) || (admin_port && admin_port < 1024)
     include_recipe 'authbind'
   end
 
@@ -86,11 +89,11 @@ gf_sort(node['glassfish']['domains']).each_pair do |domain_key, definition|
   Chef::Log.info "Defining GlassFish Domain #{domain_key} - domain"
 
   glassfish_domain domain_key do
-    min_memory definition['config']['min_memory'] if definition['config']['min_memory']
-    max_memory definition['config']['max_memory'] if definition['config']['max_memory']
-    max_perm_size definition['config']['max_perm_size'] if definition['config']['max_perm_size']
-    max_stack_size definition['config']['max_stack_size'] if definition['config']['max_stack_size']
-    port definition['config']['port'] if definition['config']['port']
+    min_memory definition['config']['min_memory'].to_i if definition['config']['min_memory']
+    max_memory definition['config']['max_memory'].to_i if definition['config']['max_memory']
+    max_perm_size definition['config']['max_perm_size'].to_i if definition['config']['max_perm_size']
+    max_stack_size definition['config']['max_stack_size'].to_i if definition['config']['max_stack_size']
+    port definition['config']['port'].to_i if definition['config']['port']
     admin_port admin_port if admin_port
     username username if username
     password_file password_file if password_file
@@ -784,6 +787,12 @@ gf_sort(node['glassfish']['domains']).each_pair do |domain_key, definition|
     end
   end
   Chef::Log.info "Defining GlassFish Domain #{domain_key} - complete"
+end
+
+def to_bool(value)
+  return true if value == true || value =~ (/^(true|t|yes|y|1)$/i)
+  return false if value == false || value.blank? || self =~ (/^(false|f|no|n|0)$/i)
+  raise ArgumentError.new("invalid value for Boolean: \"#{value}\"")
 end
 
 gf_sort(node['glassfish']['domains']).each_pair do |domain_key, definition|
